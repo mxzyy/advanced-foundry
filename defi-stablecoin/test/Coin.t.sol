@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ETHStablecoin} from "../src/Defi-stablecoin.sol";
+import {ETHStablecoin} from "../src/Coin.sol";
 
 contract ETHStablecoinTest is Test {
     ETHStablecoin public eths;
