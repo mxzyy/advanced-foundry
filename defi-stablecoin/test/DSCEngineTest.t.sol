@@ -304,4 +304,79 @@ contract DSCEngineTest is Test {
         address dscAddress = engine.getDsc();
         assertEq(dscAddress, address(dsc));
     }
+
+    ///////////////////////////////////
+    // redeemCollateral Revert Tests //
+    ///////////////////////////////////
+
+    /// @notice Redeeming collateral that breaks health factor should revert
+    function testRevertsIfRedeemBreaksHealthFactor() public depositedCollateralAndMintedDsc {
+        vm.startPrank(USER);
+        vm.expectRevert();
+        engine.redeemCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+    }
+
+    ////////////////////////////
+    // Liquidation Revert Tests
+    ////////////////////////////
+
+    /// @notice Liquidation with zero debt should revert
+    function testLiquidateRevertsIfDebtToCoverIsZero() public depositedCollateralAndMintedDsc {
+        vm.startPrank(LIQUIDATOR);
+        vm.expectRevert(DSCEngine.DSCEngine__NeedsMoreThanZero.selector);
+        engine.liquidate(weth, USER, 0);
+        vm.stopPrank();
+    }
+
+    //////////////////////////
+    // Redeem Event Tests   //
+    //////////////////////////
+
+    /// @notice Redeeming collateral should emit CollateralRedeemed event
+    function testRedeemCollateralEmitsEvent() public depositedCollateral {
+        vm.startPrank(USER);
+        vm.expectEmit(true, true, true, false, address(engine));
+        emit DSCEngine.CollateralRedeemed(USER, USER, weth, AMOUNT_COLLATERAL);
+        engine.redeemCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+    }
+
+    ////////////////////////////////
+    // View Function Tests (cont) //
+    ////////////////////////////////
+
+    /// @notice getLiquidationThreshold should return 50
+    function testGetLiquidationThreshold() public view {
+        assertEq(engine.getLiquidationThreshold(), 50);
+    }
+
+    /// @notice getLiquidationBonus should return 10
+    function testGetLiquidationBonus() public view {
+        assertEq(engine.getLiquidationBonus(), 10);
+    }
+
+    /// @notice getPrecision should return 1e18
+    function testGetPrecision() public view {
+        assertEq(engine.getPrecision(), 1e18);
+    }
+
+    /// @notice getMinHealthFactor should return 1e18
+    function testGetMinHealthFactor() public view {
+        assertEq(engine.getMinHealthFactor(), 1e18);
+    }
+
+    /// @notice getCollateralTokenPriceFeed should return correct price feed
+    function testGetCollateralTokenPriceFeed() public view {
+        assertEq(engine.getCollateralTokenPriceFeed(weth), ethUsdPriceFeed);
+        assertEq(engine.getCollateralTokenPriceFeed(wbtc), btcUsdPriceFeed);
+    }
+
+    /// @notice getAccountInformation should return correct values after depositing and minting
+    function testGetAccountInformationAfterMint() public depositedCollateralAndMintedDsc {
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(USER);
+        assertEq(totalDscMinted, AMOUNT_TO_MINT);
+        // 10 ETH * $2000 = $20,000
+        assertEq(collateralValueInUsd, 20000e18);
+    }
 }
